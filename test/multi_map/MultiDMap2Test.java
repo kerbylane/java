@@ -23,4 +23,11 @@ public class MultiDMap2Test {
         );
     }
 
+    /*
+     * Further tests required:
+     * - subset with 1 key (should return MultiDMap1)
+     * - subset with 2 keys (should fail, too many keys)
+     * - subset with 3 keys (should fail, too many keys)
+     * - get with 1 key (should fail, ought to return a V)
+     */
 }

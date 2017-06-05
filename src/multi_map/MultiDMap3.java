@@ -4,7 +4,7 @@ package multi_map;
 public class MultiDMap3<K1,K2,K3,V> extends MultiDMap {
     
     public MultiDMap3() {
-        super();
+        super(3);
     }
 
     @Override

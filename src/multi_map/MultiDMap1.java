@@ -13,7 +13,7 @@ public class MultiDMap1<K1,V> extends MultiDMap {
     }
 	
     public MultiDMap1() {
-	    super();
+	    super(1);
         _data = (Map<Object, Object>) new HashMap<K1,V>();
     }
     
@@ -22,9 +22,13 @@ public class MultiDMap1<K1,V> extends MultiDMap {
         return (V) get(keys);
     }
 	
-    protected V get(Object... keys) { 
-		return (V) _data.get(keys[0]);
-	}
+//    protected V get(Object... keys) { 
+//		return (V) _data.get(keys[0]);
+//	}
+    
+    public MultiDMap subset(Object... keys) {
+        throw new UnsupportedOperationException("subset called with too many keys");
+    }
     
     public void put(K1 k1, V v) {
         Object[] entries = {k1, v};
