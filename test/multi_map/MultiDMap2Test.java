@@ -22,11 +22,14 @@ public class MultiDMap2Test {
         Object[] results = entries.toArray();
         Object[] expectedResult = new Object[] { new Integer(1), new Integer(2), new Integer(3) };
         Assert.assertArrayEquals(
-            (Object[]) results[0], expectedResult 
+                expectedResult, (Object[]) results[0]
         );
 
+        // Size works for submaps too
+        Assert.assertEquals(1, md2.get(1).getSize());
+
         try {
-            md2.get(1);
+            md2.get(1, 2, 3);
             Assert.fail("MultiDMap2.get(1) should fail as it has too few keys");
         } catch (IllegalArgumentException ex) {}
     }
@@ -36,14 +39,14 @@ public class MultiDMap2Test {
         MultiDMap2<Integer, Integer, Integer> md2 = new MultiDMap2<>();
 
         md2.put(1, 2, 3);
-        MultiDMap submap = md2.subset(1);
-        Assert.assertEquals(submap.get(2), 3);
+        MultiDMap1<Integer,Integer> submap = md2.get(1);
+        Assert.assertEquals(3, (Object) submap.get(2));
 
         Assert.assertTrue(submap instanceof MultiDMap1);
 
         try {
-            md2.subset(1,2);
-            Assert.fail("MultiDMap2.subset[1,2] should fail as it has too many keys");
+            Integer result = md2.get(1, 2);
+            Assert.assertEquals(3, result.intValue());
         } catch (IllegalArgumentException ex) {}
     }
 
@@ -52,8 +55,9 @@ public class MultiDMap2Test {
         MultiDMap2<Integer, Integer, Integer> md2 = new MultiDMap2<>();
 
         Object array[] = {new Integer(1), new Integer(2), new Integer(3)};
+        // TODO: Should this work?  There's no type checking with this.
         md2.put(array);
-        Assert.assertEquals((Object) md2.get(1,2), (Object) 3);
+        Assert.assertEquals((Object) 3, (Object) md2.get(1,2));
     }
 
     @Test
@@ -64,7 +68,7 @@ public class MultiDMap2Test {
         md2.put(1, 2, 12);
 
         Set<Object[]> entries = md2.entries().collect(Collectors.toSet());
-        Assert.assertEquals(entries.size(), 2);
+        Assert.assertEquals(2, entries.size());
 
         Assert.assertEquals(
                 1,
