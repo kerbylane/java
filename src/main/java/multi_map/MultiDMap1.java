@@ -63,12 +63,12 @@ public class MultiDMap1<K1,V> extends MultiDMap {
                 .map(entry -> new Object[] {entry.getKey(), entry.getValue()});
     }
 
-    protected Stream<Object[]> constructiveEntries(int depth) {
+    protected Stream<Object[]> constructiveEntries(int maxDimensions) {
         return data.entrySet().stream().map(
                 entry -> {
-                    Object[] result = new Object[depth + 1];
-                    result[depth] = entry.getValue();
-                    result[depth-1] = entry.getKey();
+                    Object[] result = new Object[maxDimensions + 1];
+                    result[maxDimensions] = entry.getValue();
+                    result[maxDimensions -1] = entry.getKey();
                     return result;
                 }
         );

@@ -82,27 +82,25 @@ public abstract class MultiDMap {
         return constructiveEntries(dimensions);
     }
 
-    protected Stream<Object[]> constructiveEntries(int depth) {
+    protected Stream<Object[]> constructiveEntries(int maxDimensions) {
         // Builds up the arrays by creating them only at the value level and then populating
         // the keys of the arrays in reverse order.  This is intended to eliminate the use
         // of temporary, intermediate arrays.
         return data.entrySet().stream().flatMap(
-                entry -> ((MultiDMap)entry.getValue()).constructiveEntries(depth).peek(
-                        array -> array[depth - dimensions] = entry.getKey()
+                entry -> ((MultiDMap)entry.getValue()).constructiveEntries(maxDimensions).peek(
+                        array -> array[maxDimensions - dimensions] = entry.getKey()
                 )
             );
     }
 
     public boolean equals(Object obj) {
-        if (!(obj instanceof MultiDMap)) return false;
+        if (obj == null || !(obj instanceof MultiDMap)) return false;
 
-        // TODO: We could do this by walking each map in parallel to avoid array creation required with this approach
         MultiDMap that = (MultiDMap) obj;
         return
                 that.dimensions == this.dimensions &&
                 that.size == this.size &&
                 this.entries().allMatch(e -> that.get(Arrays.copyOf(e, e.length - 1)) == e[e.length - 1]);
-
     }
 
     /**
