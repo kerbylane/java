@@ -104,12 +104,16 @@ public class MultiDMap2Test {
         md2.put(1, 2, 12);
         md2.put(2, 1, 21);
 
+        Assert.assertEquals(3, md2.getSize());
+
         // trying to remove a value that isn't in the map has no effect
         int removeCount = md2.remove(1,3);
         Assert.assertEquals(0, removeCount);
+        Assert.assertEquals(3, md2.getSize());
 
         removeCount = md2.remove(2);
         Assert.assertEquals(1, removeCount);
+        Assert.assertEquals(2, md2.getSize());
 
         removeCount = md2.remove(1,1);
         // remove count is correct when all keys have been supplied
@@ -122,6 +126,13 @@ public class MultiDMap2Test {
         removeCount = md2.remove(1);
         // removing a submap works
         Assert.assertEquals(1, removeCount);
+        Assert.assertEquals(0, md2.getSize());
+
+        // Does deletion of a submap with multiple entries work?
+        md2.put(1, 1, 11);
+        md2.put(1, 2, 12);
+        removeCount = md2.remove(1);
+        Assert.assertEquals(2, removeCount);
         Assert.assertEquals(0, md2.getSize());
     }
 }

@@ -5,14 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+/**
+ * A multi-level map.
+ */
 public abstract class MultiDMap {
     
-    protected Map<Object, Object> _data;
+    protected Map<Object, Object> data;
     private int dimensions;
     private int size = 0;
     
     /**
-     * Creates an 'inner' map suitable for use as the value entry in _data.
+     * Creates an 'inner' map suitable for use as the value entry of data.
      * 
      * @return MultiDMap
      */
@@ -20,7 +23,7 @@ public abstract class MultiDMap {
     
     protected MultiDMap(int dimensions) {
         this.dimensions = dimensions;
-        _data = new HashMap<>();
+        data = new HashMap<>();
     }
 
     public int getDimensions() { return dimensions; }
@@ -35,27 +38,40 @@ public abstract class MultiDMap {
     protected Object get(Object... keys) {
         if (keys.length > dimensions)
             throw new IllegalArgumentException("incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
+        return getInner(dimensions, keys);
+    }
 
-        MultiDMap sub = (MultiDMap) _data.get(keys[0]);
-        if (sub == null || keys.length == 1)
+    protected Object getInner(int maxDimensions, Object... keys) {
+        int keyPos = maxDimensions - dimensions;
+        MultiDMap sub = (MultiDMap) data.get(keys[keyPos]);
+        if (sub == null || keyPos == keys.length - 1)
             return sub;
 
-        return sub.get(Arrays.copyOfRange(keys, 1, keys.length));
+        return sub.getInner(maxDimensions, keys);
     }
 
     /**
      * Implementation of internal put logic.  Note that there is not type checking, hence its 'protected' status.
+     *
      * @param o Array containing keys for each level of the map and the relevant value.
      */
     protected Object put(Object... o) {
-        MultiDMap inner = (MultiDMap) _data.computeIfAbsent(o[0], val -> createInnerMap());
+        if (o.length > dimensions + 1)
+            throw new IllegalArgumentException("incorrect number of arguments, must be " + (dimensions+1) + ", got " + o.length);
 
-        Object value = inner.put(Arrays.copyOfRange(o, 1, o.length));
+        return putInner(o);
+	}
+
+    protected Object putInner(Object... o) {
+        int keyPos = o.length - 1 - dimensions;
+        MultiDMap inner = (MultiDMap) data.computeIfAbsent(o[keyPos], val -> createInnerMap());
+
+        Object value = inner.putInner(o);
         if (value == null)
             ++size;
 
         return value;
-	}
+    }
 	
 	/**
 	 * Generate iterable of all key-values, similar to @{@link Map}'s entries method..
@@ -70,7 +86,7 @@ public abstract class MultiDMap {
         // Builds up the arrays by creating them only at the value level and then populating
         // the keys of the arrays in reverse order.  This is intended to eliminate the use
         // of temporary, intermediate arrays.
-        return _data.entrySet().stream().flatMap(
+        return data.entrySet().stream().flatMap(
                 entry -> ((MultiDMap)entry.getValue()).constructiveEntries(depth).peek(
                         array -> array[depth - dimensions] = entry.getKey()
                 )
@@ -80,6 +96,7 @@ public abstract class MultiDMap {
     public boolean equals(Object obj) {
         if (!(obj instanceof MultiDMap)) return false;
 
+        // TODO: We could do this by walking each map in parallel to avoid array creation required with this approach
         MultiDMap that = (MultiDMap) obj;
         return
                 that.dimensions == this.dimensions &&
@@ -99,22 +116,33 @@ public abstract class MultiDMap {
         if (keys.length > dimensions)
             throw new IllegalArgumentException("incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
 
-        Object inner = _data.get(keys[0]);
+        return removeInner(dimensions, keys);
+    }
+
+    /**
+     * Internal implementation of removal.  This approach avoids the need to create new arrays for each level.
+     *
+     * @param maxDimensions Number of dimensions of the top level MultiDMap
+     * @param keys          Array of keys identifying what is to be deleted
+     * @return              Number of values removed
+     */
+    private int removeInner(int maxDimensions, Object... keys) {
+        int pos = maxDimensions - dimensions;
+        Object inner = data.get(keys[pos]);
         if (inner == null)
             return 0;
 
         int removed;
-        if (keys.length == 1) {
+        if (keys.length - 1 == pos) {
             // Either we are removing a single value or an entire submap
-            // removed = inner instanceof MultiDMap ? ((MultiDMap) inner).getSize() : 1;
-            removed = dimensions == 2 ? 1 : ((MultiDMap) inner).getSize();
-            _data.remove(keys[0]);
+            removed = dimensions == 1 ? 1 : ((MultiDMap) inner).getSize();
+            data.remove(keys[pos]);
         } else {
             MultiDMap innerMap = (MultiDMap) inner;
-            removed = innerMap.remove(Arrays.copyOfRange(keys, 1, keys.length));
+            removed = innerMap.removeInner(maxDimensions, keys);
             if (innerMap.getSize() == 0) {
                 // innerMap is now empty, so we can remove it too
-                _data.remove(keys[0]);
+                data.remove(keys[pos]);
             }
         }
 
