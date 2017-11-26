@@ -20,7 +20,7 @@ public class MultiDMap2Test {
         
         Stream<Object[]> entries = md2.entries();
         Object[] results = entries.toArray();
-        Object[] expectedResult = new Object[] { new Integer(1), new Integer(2), new Integer(3) };
+        Object[] expectedResult = new Object[] {1, 2, 3};
         Assert.assertArrayEquals(
                 expectedResult, (Object[]) results[0]
         );
@@ -49,16 +49,6 @@ public class MultiDMap2Test {
             Assert.assertEquals(3, result.intValue());
         } catch (IllegalArgumentException ex) {}
     }
-
-//    @Test
-//    public void testPut() {
-//        MultiDMap2<Integer, Integer, Integer> md2 = new MultiDMap2<>();
-//
-//        Object array[] = {new Integer(1), new Integer(2), new Integer(3)};
-//        // TODO: Should this work?  There's no type checking with this.
-//        md2.put(array);
-//        Assert.assertEquals((Object) 3, (Object) md2.get(1,2));
-//    }
 
     @Test
     public void testEntries() {

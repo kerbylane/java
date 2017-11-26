@@ -6,11 +6,9 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public abstract class MultiDMap {
-
-    // TODO: add remove() (it will need to reduce the size value)
     
-    protected int dimensions;
     protected Map<Object, Object> _data;
+    private int dimensions;
     private int size = 0;
     
     /**
@@ -73,11 +71,8 @@ public abstract class MultiDMap {
         // the keys of the arrays in reverse order.  This is intended to eliminate the use
         // of temporary, intermediate arrays.
         return _data.entrySet().stream().flatMap(
-                entry -> ((MultiDMap)entry.getValue()).constructiveEntries(depth).map(
-                        array -> {
-                            array[depth - dimensions] = entry.getKey();
-                            return array;
-                        }
+                entry -> ((MultiDMap)entry.getValue()).constructiveEntries(depth).peek(
+                        array -> array[depth - dimensions] = entry.getKey()
                 )
             );
     }
@@ -86,9 +81,11 @@ public abstract class MultiDMap {
         if (!(obj instanceof MultiDMap)) return false;
 
         MultiDMap that = (MultiDMap) obj;
-        if (that.dimensions != this.dimensions || that.size != this.size) return false;
+        return
+                that.dimensions == this.dimensions &&
+                that.size == this.size &&
+                this.entries().allMatch(e -> that.get(Arrays.copyOf(e, e.length - 1)) == e[e.length - 1]);
 
-        return this.entries().allMatch(e -> that.get(Arrays.copyOf(e, e.length - 1)) == e[e.length - 1]);
     }
 
     /**
