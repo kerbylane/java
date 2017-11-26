@@ -11,12 +11,16 @@ public class MultiDMap2<K1,K2,V> extends MultiDMap {
     protected MultiDMap createInnerMap() {
         return new MultiDMap1<K2,V>();
     }
+
+    public void put(K1 k1, K2 k2, V v) {
+        super.put(k1, k2, v);
+    }
 	
 	public V get(K1 k1, K2 k2) { return (V) super.get(k1, k2); }
 
     public MultiDMap1<K2,V> get(K1 k1) { return (MultiDMap1<K2, V>) super.get(k1); }
 
-	public void put(K1 k1, K2 k2, V v) {
-	    super.put(k1, k2, v);
-	}
+    public int remove(K1 k1, K2 k2) { return super.remove(k1, k2); }
+
+    public int remove(K1 k1) { return super.remove(k1); }
 }

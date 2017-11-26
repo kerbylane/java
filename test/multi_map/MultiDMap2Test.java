@@ -50,15 +50,15 @@ public class MultiDMap2Test {
         } catch (IllegalArgumentException ex) {}
     }
 
-    @Test
-    public void testPut() {
-        MultiDMap2<Integer, Integer, Integer> md2 = new MultiDMap2<>();
-
-        Object array[] = {new Integer(1), new Integer(2), new Integer(3)};
-        // TODO: Should this work?  There's no type checking with this.
-        md2.put(array);
-        Assert.assertEquals((Object) 3, (Object) md2.get(1,2));
-    }
+//    @Test
+//    public void testPut() {
+//        MultiDMap2<Integer, Integer, Integer> md2 = new MultiDMap2<>();
+//
+//        Object array[] = {new Integer(1), new Integer(2), new Integer(3)};
+//        // TODO: Should this work?  There's no type checking with this.
+//        md2.put(array);
+//        Assert.assertEquals((Object) 3, (Object) md2.get(1,2));
+//    }
 
     @Test
     public void testEntries() {
@@ -104,5 +104,34 @@ public class MultiDMap2Test {
 
         md22.put(1,3, 13);
         Assert.assertNotEquals(md21, md22);
+    }
+
+    @Test
+    public void testRemove() {
+        MultiDMap2<Integer, Integer, Integer> md2 = new MultiDMap2<>();
+
+        md2.put(1, 1, 11);
+        md2.put(1, 2, 12);
+        md2.put(2, 1, 21);
+
+        // trying to remove a value that isn't in the map has no effect
+        int removeCount = md2.remove(1,3);
+        Assert.assertEquals(0, removeCount);
+
+        removeCount = md2.remove(2);
+        Assert.assertEquals(1, removeCount);
+
+        removeCount = md2.remove(1,1);
+        // remove count is correct when all keys have been supplied
+        Assert.assertEquals(1, removeCount);
+
+        // new size is correct at all levels of the map
+        Assert.assertEquals(1, md2.getSize());
+        Assert.assertEquals(1, md2.get(1).getSize());
+
+        removeCount = md2.remove(1);
+        // removing a submap works
+        Assert.assertEquals(1, removeCount);
+        Assert.assertEquals(0, md2.getSize());
     }
 }

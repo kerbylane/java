@@ -91,10 +91,37 @@ public abstract class MultiDMap {
         return this.entries().allMatch(e -> that.get(Arrays.copyOf(e, e.length - 1)) == e[e.length - 1]);
     }
 
-    public void remove(Object... keys) {
-        // Goals:
-        // - remove node identified by keys
-        // - if any maps/submaps which contained keys are left empty remove those from their parent
-        // - reduce size value as appropriate.
+    /**
+     * Removes a value or an entire submap of this instance.  If the number of keys supplied
+     * is less than the number of dimensions the submap found with those keys will be removed.
+     *
+     * @param keys  Array of keys identifying what is to be deleted
+     * @return      Number of values removed
+     */
+    protected int remove(Object... keys) {
+        if (keys.length > dimensions)
+            throw new IllegalArgumentException("incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
+
+        Object inner = _data.get(keys[0]);
+        if (inner == null)
+            return 0;
+
+        int removed;
+        if (keys.length == 1) {
+            // Either we are removing a single value or an entire submap
+            // removed = inner instanceof MultiDMap ? ((MultiDMap) inner).getSize() : 1;
+            removed = dimensions == 2 ? 1 : ((MultiDMap) inner).getSize();
+            _data.remove(keys[0]);
+        } else {
+            MultiDMap innerMap = (MultiDMap) inner;
+            removed = innerMap.remove(Arrays.copyOfRange(keys, 1, keys.length));
+            if (innerMap.getSize() == 0) {
+                // innerMap is now empty, so we can remove it too
+                _data.remove(keys[0]);
+            }
+        }
+
+        size -= removed;
+        return removed;
     }
 }
