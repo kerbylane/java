@@ -35,25 +35,14 @@ public abstract class MultiDMap {
      * @return      Value found in innermost map
      */
     protected Object get(Object... keys) {
-        if (keys.length != dimensions)
-            throw new IllegalArgumentException("incorrect number of keys, expected " + dimensions + ", got " + keys.length);
+        if (keys.length > dimensions)
+            throw new IllegalArgumentException("incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
 
         MultiDMap sub = (MultiDMap) _data.get(keys[0]);
         if (sub == null || keys.length == 1)
             return sub;
 
         return sub.get(Arrays.copyOfRange(keys, 1, keys.length));
-    }
-
-    protected MultiDMap subset(Object... keys) {
-        if (keys.length >= dimensions)
-            throw new IllegalArgumentException("incorrect number of keys, can accept at most " + (dimensions - 1) + ", got " + keys.length);
-
-        MultiDMap sub = (MultiDMap) _data.get(keys[0]);
-        if (sub == null || keys.length == 1)
-            return sub;
-
-        return sub.subset(Arrays.copyOfRange(keys, 1, keys.length));
     }
 
     /**
@@ -93,18 +82,6 @@ public abstract class MultiDMap {
             );
     }
 
-    /**
-     * Creates a new array by concatenating 2 inputs.
-     * @param first     Array that will begin at position 0
-     * @param second    Array that will follow
-     * @return          New array
-     */
-    protected Object[] concat(Object[] first, Object[] second) {
-        Object[] result = Arrays.copyOf(first, first.length + second.length);
-        System.arraycopy(second, 0, result, first.length, second.length);
-        return result;
-    }
-
     public boolean equals(Object obj) {
         if (!(obj instanceof MultiDMap)) return false;
 
@@ -112,5 +89,12 @@ public abstract class MultiDMap {
         if (that.dimensions != this.dimensions || that.size != this.size) return false;
 
         return this.entries().allMatch(e -> that.get(Arrays.copyOf(e, e.length - 1)) == e[e.length - 1]);
+    }
+
+    public void remove(Object... keys) {
+        // Goals:
+        // - remove node identified by keys
+        // - if any maps/submaps which contained keys are left empty remove those from their parent
+        // - reduce size value as appropriate.
     }
 }
