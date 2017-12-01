@@ -135,4 +135,13 @@ public class MultiDMap2Test {
         Assert.assertEquals(2, removeCount);
         Assert.assertEquals(0, md2.getSize());
     }
+
+    @Test
+    public void fillTests() {
+        MultiDMap2<Integer, Integer, Integer> md2 = new MultiDMap2<>();
+        MultiDFiller.completeFill(md2, 3);
+
+        Assert.assertEquals(9, md2.getSize());
+        Assert.assertEquals(new Integer(11), md2.get(1,1));
+    }
 }
