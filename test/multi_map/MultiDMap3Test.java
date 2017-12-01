@@ -3,6 +3,8 @@ package multi_map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MultiDMap3Test {
@@ -80,5 +82,35 @@ public class MultiDMap3Test {
         removeCount = md3.remove(1);
         Assert.assertEquals(2, removeCount);
         Assert.assertEquals(0, md3.getSize());
+    }
+
+    /**
+     * Determine if the second value in an array matches a target value.
+     *
+     * @param target value we want to match
+     * @param entry  Array whose 2nd value is checked
+     * @return
+     */
+    private static boolean test(Integer target, Object[] entry) {
+        if (entry.length != 2)
+            return true;
+
+        return entry[entry.length - 1] == target;
+    }
+
+    @Test
+    public void testFilter() {
+        MultiDMap3<Integer, Integer, Integer, Integer> md3 = new MultiDMap3<>();
+
+        md3.put(1, 1, 1, 111);
+        md3.put(1, 2, 1, 121);
+        md3.put(2, 1, 1, 211);
+
+        List<Object[]> results = md3.filteredEntries(key -> test(2, key)).collect(Collectors.toList());
+        Assert.assertEquals(1, results.size());
+        Object[] entry = results.get(0);
+        Assert.assertEquals(121, entry[entry.length-1]);
+
+        Assert.assertEquals(2, md3.filteredEntries(key -> test(1, key)).collect(Collectors.toList()).size());
     }
 }

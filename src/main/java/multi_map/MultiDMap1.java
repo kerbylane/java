@@ -1,5 +1,6 @@
 package multi_map;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 @SuppressWarnings("unchecked")
@@ -72,5 +73,27 @@ public class MultiDMap1<K1,V> extends MultiDMap {
                     return result;
                 }
         );
+    }
+
+    @Override
+    protected Stream<Object[]> filteredEntries(NestedMapFilter filter, int maxDimensions, Object[] parentKeys) {
+        return data.
+                entrySet().
+                stream().
+                filter(
+                    entry -> {
+                        Object[] keys = Arrays.copyOf(parentKeys, parentKeys.length + 2);
+                        keys[keys.length-2] = entry.getKey();
+                        keys[keys.length-1] = entry.getValue();
+                        return filter.test(keys);
+                    }
+                ).map(
+                    entry -> {
+                        Object[] result = new Object[maxDimensions + 1];
+                        result[maxDimensions] = entry.getValue();
+                        result[maxDimensions -1] = entry.getKey();
+                        return result;
+                    }
+                );
     }
 }

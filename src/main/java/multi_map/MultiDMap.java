@@ -1,8 +1,7 @@
 package multi_map;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -37,7 +36,8 @@ public abstract class MultiDMap {
      */
     protected Object get(Object... keys) {
         if (keys.length > dimensions)
-            throw new IllegalArgumentException("incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
+            throw new IllegalArgumentException(
+                    "incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
         return getInner(dimensions, keys);
     }
 
@@ -51,13 +51,14 @@ public abstract class MultiDMap {
     }
 
     /**
-     * Implementation of internal put logic.  Note that there is not type checking, hence its 'protected' status.
+     * Implementation of internal put logic.  Note that there is no type checking, hence its 'protected' status.
      *
      * @param o Array containing keys for each level of the map and the relevant value.
      */
     protected Object put(Object... o) {
         if (o.length > dimensions + 1)
-            throw new IllegalArgumentException("incorrect number of arguments, must be " + (dimensions+1) + ", got " + o.length);
+            throw new IllegalArgumentException(
+                    "incorrect number of arguments, must be " + (dimensions+1) + ", got " + o.length);
 
         return putInner(o);
 	}
@@ -85,7 +86,8 @@ public abstract class MultiDMap {
     protected Stream<Object[]> constructiveEntries(int maxDimensions) {
         // Builds up the arrays by creating them only at the value level and then populating
         // the keys of the arrays in reverse order.  This is intended to eliminate the use
-        // of temporary, intermediate arrays.
+        // of temporary, intermediate arrays, or a single Deque that is updated by multiple
+        // processes (if we're running in parallel, is this valid).
         return data.entrySet().stream().flatMap(
                 entry -> ((MultiDMap)entry.getValue()).constructiveEntries(maxDimensions).peek(
                         array -> array[maxDimensions - dimensions] = entry.getKey()
@@ -103,6 +105,45 @@ public abstract class MultiDMap {
                 this.entries().allMatch(e -> that.get(Arrays.copyOf(e, e.length - 1)) == e[e.length - 1]);
     }
 
+    interface NestedMapFilter extends Predicate<Object[]> {
+        @Override
+        boolean test(Object[] entry);
+    }
+
+    /**
+     * Provides a way to apply a filter when generating entries which avoids generation of subtrees
+     * of entries.  This could be faster than iterating over all entries and filtering externally in
+     * some cases.
+     *
+     * @param filter
+     * @return
+     */
+    protected Stream<Object[]> filteredEntries(NestedMapFilter filter) {
+        return filteredEntries(filter, dimensions, new Object[0]);
+    }
+
+    protected Stream<Object[]> filteredEntries(NestedMapFilter filter, int maxDimensions, Object[] parentKeys) {
+        return data.entrySet().stream().flatMap(
+                entry -> {
+                    Object[] keys = Arrays.copyOf(parentKeys, parentKeys.length + 1);
+                    keys[keys.length-1] = entry.getKey();
+                    boolean pass = filter.test(keys);
+
+                    Stream<Object[]> results;
+                    if (pass) {
+                        MultiDMap inner = (MultiDMap) entry.getValue();
+                        results = inner.filteredEntries(filter, maxDimensions, keys).peek(
+                                array -> array[maxDimensions - dimensions] = entry.getKey()
+                        );
+                    } else {
+                        results = Stream.empty();
+                    }
+
+                    return results;
+                }
+        );
+    }
+
     /**
      * Removes a value or an entire submap of this instance.  If the number of keys supplied
      * is less than the number of dimensions the submap found with those keys will be removed.
@@ -112,7 +153,8 @@ public abstract class MultiDMap {
      */
     protected int remove(Object... keys) {
         if (keys.length > dimensions)
-            throw new IllegalArgumentException("incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
+            throw new IllegalArgumentException(
+                    "incorrect number of keys, accepts at most " + dimensions + ", got " + keys.length);
 
         return removeInner(dimensions, keys);
     }
