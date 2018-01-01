@@ -87,15 +87,15 @@ public class MultiDMap3Test {
     /**
      * Determine if the second value in an array matches a target value.
      *
-     * @param target value we want to match
-     * @param entry  Array whose 2nd value is checked
-     * @return
+     * @param target    value we want to match
+     * @param entry     Array whose 2nd value is checked
+     * @return          true if the array doesn't have 2 entries or if the second element is != target  
      */
     private static boolean test(Integer target, Object[] entry) {
         if (entry.length != 2)
             return true;
 
-        return entry[entry.length - 1] == target;
+        return entry[1] == target;
     }
 
     @Test
