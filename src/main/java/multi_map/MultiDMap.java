@@ -27,10 +27,14 @@ public abstract class MultiDMap {
 
     public int getDimensions() { return dimensions; }
 
+    /**
+     * The number of values with distinct keys in the instance.
+     * @return  The number of values contained
+     */
     public int getSize() { return size; }
 
     /**
-     * Implementation of internal get logic.  Note that there is not type checking, hence its 'protected' status.
+     * Implementation of internal get logic.  Note that there is no type checking, hence its 'protected' status.
      * @param keys  Array of keys, one for each level of the instance
      * @return      Value found in innermost map
      */
@@ -52,8 +56,10 @@ public abstract class MultiDMap {
 
     /**
      * Implementation of internal put logic.  Note that there is no type checking, hence its 'protected' status.
+     * This is done without testing the length to avoid testing at every level.
      *
-     * @param o Array containing keys for each level of the map and the relevant value.
+     * @param   o Array containing keys for each level of the map and the relevant value.
+     * @return  if there was already a value at the specified key, that value is returned, otherwise null
      */
     protected Object put(Object... o) {
         if (o.length > dimensions + 1)
@@ -63,6 +69,13 @@ public abstract class MultiDMap {
         return putInner(o);
 	}
 
+    /**
+     * Implements the putting operation given an array which contains the complete argument
+     * to the public put statement that was originally called.
+     *
+     * @param   o Array containing keys for each level of the map and the relevant value.
+     * @return  if there was already a value at the specified key, that value is returned, otherwise null
+     */
     protected Object putInner(Object... o) {
         int keyPos = o.length - 1 - dimensions;
         MultiDMap inner = (MultiDMap) data.computeIfAbsent(o[keyPos], val -> createInnerMap());
@@ -75,7 +88,7 @@ public abstract class MultiDMap {
     }
 	
 	/**
-	 * Generate iterable of all key-values, similar to @{@link Map}'s entries method..
+	 * Generate iterable of all key-values, similar to @{@link Map}'s entries method.
 	 * 
 	 * @return  Stream of arrays in which each position holds the value for the relevant dimension
 	 */
@@ -89,14 +102,17 @@ public abstract class MultiDMap {
         // of temporary, intermediate arrays, or a single Deque that is updated by multiple
         // processes (if we're running in parallel, is this valid).
         return data.entrySet().stream().flatMap(
-                entry -> ((MultiDMap)entry.getValue()).constructiveEntries(maxDimensions).peek(
-                        array -> array[maxDimensions - dimensions] = entry.getKey()
+                entry -> ((MultiDMap)entry.getValue()).constructiveEntries(maxDimensions).map(
+                        array -> {
+                            array[maxDimensions - dimensions] = entry.getKey();
+                            return array;
+                        }
                 )
             );
     }
 
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof MultiDMap)) return false;
+        if (!(obj instanceof MultiDMap)) return false;
 
         MultiDMap that = (MultiDMap) obj;
         return
@@ -115,8 +131,15 @@ public abstract class MultiDMap {
      * of entries.  This could be faster than iterating over all entries and filtering externally in
      * some cases.
      *
-     * @param filter
-     * @return
+     * The filter will be called repeatedly during the execution of this method. It will be called
+     * once for every entry in each MultiDMap contained in the instance. The argument passed will
+     * be an array whose length matches the depth of the MultiDMap being evaluated. So, for instance,
+     * every key in the top level MultiDMap will be passed to the filter in an array of size 1.
+     *
+     * Therefore the filter must be able to process arrays of varying length and respond appropriately.
+     *
+     * @param filter    {@link NestedMapFilter} that will determine if submaps should be included or excluded
+     * @return          Stream of arrays which satisfy the conditions of the filter
      */
     protected Stream<Object[]> filteredEntries(NestedMapFilter filter) {
         return filteredEntries(filter, dimensions, new Object[0]);
@@ -127,19 +150,16 @@ public abstract class MultiDMap {
                 entry -> {
                     Object[] keys = Arrays.copyOf(parentKeys, parentKeys.length + 1);
                     keys[keys.length-1] = entry.getKey();
-                    boolean pass = filter.test(keys);
 
-                    Stream<Object[]> results;
-                    if (pass) {
-                        MultiDMap inner = (MultiDMap) entry.getValue();
-                        results = inner.filteredEntries(filter, maxDimensions, keys).peek(
-                                array -> array[maxDimensions - dimensions] = entry.getKey()
-                        );
-                    } else {
-                        results = Stream.empty();
-                    }
+                    if (!filter.test(keys))
+                        return Stream.empty();
 
-                    return results;
+                    return ((MultiDMap) entry.getValue()).filteredEntries(filter, maxDimensions, keys).map(
+                            array -> {
+                                array[maxDimensions - dimensions] = entry.getKey();
+                                return array;
+                            }
+                    );
                 }
         );
     }

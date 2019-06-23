@@ -64,6 +64,16 @@ public class MultiDMap1<K1,V> extends MultiDMap {
                 .map(entry -> new Object[] {entry.getKey(), entry.getValue()});
     }
 
+    /**
+     * This version of the method is the one that is actually creating the arrays which are
+     * used by the callers, normally higher-dimensioned MultiDMaps. The returned Stream
+     * contains arrays of which only the last 2 positions are populated. The containing
+     * MultiDMap will populate the 3rd-to-last position. The remaining positions are to
+     * be populated by the higher-level containing MultiDMaps.
+     *
+     * @param maxDimensions number of dimensions of the containing MultiDMap
+     * @return              Stream of arrays to be used to construct return value for {@link MultiDMap#entries()}
+     */
     protected Stream<Object[]> constructiveEntries(int maxDimensions) {
         return data.entrySet().stream().map(
                 entry -> {
